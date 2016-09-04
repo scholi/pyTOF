@@ -1,0 +1,7 @@
+This library is still in development. Please follow up this package during the following days to have a functional library...
+
+This library can read and parse ionToF file format .ITA, .ITM and .ITS.
+
+For the moment is was tested with .ITA files and the channels data can be retrieved.
+
+As ionToF uses a proprietary file format all the data parsing is done by pure trial and errors, so this library might by very buggy.
