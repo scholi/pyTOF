@@ -1,2 +1,1 @@
-from Block import *
-from ITA import *
+from ionTOF import ITA, Block

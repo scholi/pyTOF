@@ -1,4 +1,4 @@
-import Block
+from ionTOF import Block
 import numpy as np
 import struct
 import os.path
@@ -16,34 +16,34 @@ class ITA:
 		self.getMassInt()
 
 	def getMassInt(self):
-		R=[z for z in self.root.goto('MassIntervalList').List if z['name']=='mi']
+		R=[z for z in self.root.goto('MassIntervalList').List if z['name'].decode()=='mi']
 		N=len(R)
 		self.peaks={}
 		for i in range(N):
 			try:
 				d=self.root.goto('MassIntervalList/mi['+str(i)+']').dictList()
-				self.peaks[d['id']['long']]=d
+				self.peaks[d[b'id']['long']]=d
 			except: pass
 
 	def getChannelByName(self, name):
 		for P in self.peaks:
 			p=self.peaks[P]
 			ma=re.compile(name,re.I+re.U)
-			if ma.match(p['assign']['utf16']) or ma.match(p['desc']['utf16']):
-				return p['id']['long']
+			if ma.match(p[b'assign']['utf16']) or ma.match(p[b'desc']['utf16']):
+				return p[b'id']['long']
 		return None
 
 	def getChannelByMass(self, mass):
 		for P in self.peaks:
 			p=self.peaks[P]
-			if p['id']['long']>1 and p['lmass']['float']<=mass and mass<=p['umass']['float']:
-				return p['id']['long']
+			if p[b'id']['long']>1 and p[b'lmass']['float']<=mass and mass<=p[b'umass']['float']:
+				return p[b'id']['long']
 		return None
 			
 	def showMassInt(self):
 			for P in self.peaks:
 				p=self.peaks[P]
-				print(p['id']['long'],p['desc']['utf16'],p['assign']['utf16'],p['lmass']['float'],p['cmass']['float'],p['umass']['float'])
+				print(p[b'id']['long'],p[b'desc']['utf16'],p[b'assign']['utf16'],p[b'lmass']['float'],p[b'cmass']['float'],p[b'umass']['float'])
 
 	def getSize(self):
 		X = self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.XSize').getLong()

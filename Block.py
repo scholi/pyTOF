@@ -14,7 +14,10 @@ class Block:
 		self.head = dict(zip(['length','z','u','x','y'],struct.unpack('<5I',f.read(20))))
 		self.name = self.f.read(self.head['length'])
 		self.value = self.f.read(self.head['x'])
-		if self.Type[0] in ['\x01','\x03']: self.getList()
+		self.List=[]
+		t = self.Type[0:1]
+		if t in [b'\x01',b'\x03']:
+			self.getList()
 		
 	def getName(self):
 		return self.name
@@ -46,7 +49,7 @@ class Block:
 		for i,l in enumerate(self.List):
 			self.f.seek(l['bidx'])
 			child = Block(self.f)
-			if child.Type[0]==b'\x00':
+			if child.Type[0:1]==b'\x00':
 				value=binascii.hexlify(child.value)
 				d[child.name]={'raw':value}
 				if len(child.value)==4:
@@ -97,9 +100,9 @@ class Block:
 	
 	def getIndex(self, name, idx=0):
 		for l in self.List:
-			if l['name']==name and l['id']==idx:
+			if l['name'].decode()==name and l['id']==idx:
 				return l['bidx']
-		raise ValueError('Item {name} (index={index}) not found!'.format(name,idx))
+		raise ValueError('Item "{name}" (index={index}) not found!'.format(name=name,index=idx))
 		
 	def goto(self,path):
 		s = self
