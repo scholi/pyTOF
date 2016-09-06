@@ -16,22 +16,25 @@ class ITA:
 		self.getMassInt()
 
 	def getMassInt(self):
-		R=[z for z in self.root.goto('MassIntervalList').List if z['name'].decode()=='mi']
+		R=[z for z in self.root.goto('MassIntervalList').getList() if z['name'].decode()=='mi']
 		N=len(R)
 		self.peaks={}
 		for i in range(N):
 			try:
-				d=self.root.goto('MassIntervalList/mi['+str(i)+']').dictList()
+				X = self.root.goto('MassIntervalList/mi['+str(i)+']')
+				d = X.dictList()
 				self.peaks[d[b'id']['long']]=d
-			except: pass
+			except ValueError:
+				pass
 
-	def getChannelByName(self, name):
+	def getChannelsByName(self, name):
+		res=[]
 		for P in self.peaks:
 			p=self.peaks[P]
 			ma=re.compile(name,re.I+re.U)
 			if ma.match(p[b'assign']['utf16']) or ma.match(p[b'desc']['utf16']):
-				return p[b'id']['long']
-		return None
+				res.append(p)
+		return res
 
 	def getChannelByMass(self, mass):
 		for P in self.peaks:
@@ -49,6 +52,12 @@ class ITA:
 		X = self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.XSize').getLong()
 		Y = self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.YSize').getLong()
 		return X,Y
+
+	def getNScans(self):
+		return self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.NumberOfScans').getLong()
+	
+	def getNImages(self):
+		Nimg = self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.NumberOfImages').getLong()
 
 	def getImage(self, channel, scan):
 		assert type(channel) == int

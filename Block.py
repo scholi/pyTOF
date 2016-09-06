@@ -14,15 +14,17 @@ class Block:
 		self.head = dict(zip(['length','z','u','x','y'],struct.unpack('<5I',f.read(20))))
 		self.name = self.f.read(self.head['length'])
 		self.value = self.f.read(self.head['x'])
-		self.List=[]
-		t = self.Type[0:1]
-		if t in [b'\x01',b'\x03']:
-			self.getList()
+		self.List=None
 		
 	def getName(self):
 		return self.name
-	
+
 	def getList(self):
+		if not self.Type[0:1] in [b'\x01',b'\x03']: return []
+		if self.List is None: self.createList()
+		return self.List
+	
+	def createList(self):
 		length,nums,ID,L,NextBlock = struct.unpack('<III9xI8xQ',self.value[:41])
 		self.nums= L
 		self.subType = ID
@@ -37,8 +39,8 @@ class Block:
 			self.f.seek(NextBlock)
 			try:
 				_next = Block(self.f)
-				_next.getList()
-				self.List+=_next.List
+				self.List += _next.getList()
+				del _next
 			except: pass
 	
 	def getString(self):
@@ -46,7 +48,7 @@ class Block:
 	
 	def dictList(self):
 		d={}
-		for i,l in enumerate(self.List):
+		for i,l in enumerate(self.getList()):
 			self.f.seek(l['bidx'])
 			child = Block(self.f)
 			if child.Type[0:1]==b'\x00':
@@ -56,16 +58,17 @@ class Block:
 					d[child.name]['long'] = child.getLong()
 				elif len(child.value)==8:
 					d[child.name]['float'] = child.getDouble()
-				try:
-					d[child.name]['utf16']=child.value.decode('utf16')
-				except: pass
+					d[child.name]['long'] = child.getLongLong()
+				if len(child.value)%2==0:
+					d[child.name]['utf16']=child.value.decode('utf16',"ignore")
 			del child
 		return d
 	
 	def showList(self):
-		print('List of',len(self.List),'elements. Type:',self.subType)
+		print('List of',len(self.getList()),'elements. Type:',self.subType)
 		for i,l in enumerate(self.List):
 			self.f.seek(l['bidx'])
+			other=''
 			try:
 				child = Block(self.f)
 				if child.Type[0]==b'\x00':
@@ -75,6 +78,7 @@ class Block:
 					elif len(child.value)==8:
 						vL = child.getDouble()
 						Dtype='double'
+						other+=str(child.getLongLong())+" (long64)"
 					else:
 						try:
 							vL=child.value.decode('utf16')
@@ -87,20 +91,22 @@ class Block:
 					value=binascii.hexlify(child.value)
 					if len(value)>10:
 						value=value[:10]+'...'
-					print(u"{name} ({id}) @{bidx}, value = {value} (hex) = {vL} ({Dtype})".format(value=value,vL=vL,Dtype=Dtype,**l))
+					print(u"{name} ({id}) @{bidx}, value = {value} (hex) = {vL} ({Dtype}){other}".format(value=value,vL=vL,Dtype=Dtype,other=other,**l))
 				else:
 					print("{name} ({id}) @{bidx}".format(**l))
 				del child
 			except: pass
 			
-			
 	def gotoItem(self, name, idx=0):
-		self.f.seek(self.getIndex(name,idx))
+		Idx = self.getIndex(name,idx)
+		self.f.seek(Idx)
 		return Block(self.f)
 	
 	def getIndex(self, name, idx=0):
-		for l in self.List:
-			if l['name'].decode()==name and l['id']==idx:
+		if type(name)==str:
+			name=name.encode()
+		for l in self.getList():
+			if l['name']==name and l['id']==idx:
 				return l['bidx']
 		raise ValueError('Item "{name}" (index={index}) not found!'.format(name=name,index=idx))
 		
@@ -114,7 +120,10 @@ class Block:
 				p=p[:i]
 			s=s.gotoItem(p,idx)
 		return s
-		
+	
+	def getLongLong(self):
+		return struct.unpack('<q',self.value)[0]
+
 	def getDouble(self):
 		return struct.unpack('<d',self.value)[0]
 	
@@ -125,7 +134,7 @@ class Block:
 		return struct.unpack('<i',self.value)[0]
 	
 	def show(self,maxlevel=3,level=0, All=False):
-		for l in self.List:
+		for l in self.getList():
 			if l['id']==0 or All:
 				print("{tab}{name} ({id}) @{bidx}".format(tab="\t"*level,**l))
 				if level<maxlevel:
