@@ -2,6 +2,7 @@ import binascii
 import struct
 import numpy as np
 import binascii
+import sys
 
 class Block:
 	def __init__(self, f):
@@ -71,32 +72,48 @@ class Block:
 			other=''
 			try:
 				child = Block(self.f)
-				if child.Type[0]==b'\x00':
+				if child.Type[0:1]==b'\x00':
 					if len(child.value)==4:
 						vL = child.getLong()
 						Dtype='long'
 					elif len(child.value)==8:
 						vL = child.getDouble()
 						Dtype='double'
-						other+=str(child.getLongLong())+" (long64)"
+						other+=' = '+str(child.getLongLong())+" (long64)"
+					elif len(child.value)%2==0:
+						vL=child.value.decode('utf16',"ignore")
+						if len(vL)>20:
+							vL=vL[:20]+'...'
+						Dtype='UTF-16'
+					elif len(child.value)==2:
+						vL = child.getShort()
+						Dtype='short'
+					elif len(child.value)==1:
+						vL = child.getByte()
+						Dtype='byte'
 					else:
-						try:
-							vL=child.value.decode('utf16')
-							if len(vL)>20:
-								vL=vL[:20]+'...'
-							Dtype='UTF-16'
-						except:
-							Dtype = '???'
-							vL = '???'
+						vL='???'
+						Dtype='???'
 					value=binascii.hexlify(child.value)
-					if len(value)>10:
-						value=value[:10]+'...'
-					print(u"{name} ({id}) @{bidx}, value = {value} (hex) = {vL} ({Dtype}){other}".format(value=value,vL=vL,Dtype=Dtype,other=other,**l))
+					if len(value)>16:
+						value=value[:16]+b'...'
+					print(u"{name} ({id}) <{blen}> @{bidx}, value = {value} (hex) = {vL} ({Dtype}){other}".format(value=value,vL=vL,Dtype=Dtype,other=other,**l))
 				else:
-					print("{name} ({id}) @{bidx}".format(**l))
+					print("{name} ({id}) [{T}] <{blen}> @{bidx}".format(T=child.Type[0],**l))
 				del child
-			except: pass
+			except ValueError:
+				pass
 			
+	def __iter__(self):
+		self.pointer=0
+		return self
+
+	def __next__(self):
+		if self.pointer>=len(self.getList()): raise StopIteration
+		self.f.seek(self.List[self.pointer]['bidx'])
+		self.pointer+=1
+		return Block(self.f)
+
 	def gotoItem(self, name, idx=0):
 		Idx = self.getIndex(name,idx)
 		self.f.seek(Idx)
@@ -126,6 +143,12 @@ class Block:
 
 	def getDouble(self):
 		return struct.unpack('<d',self.value)[0]
+
+	def getShort(self):
+		return struct.unpack('<h',self.value)[0]
+
+	def getByte(self):
+		return struct.unpack('<B',self.value)[0]
 	
 	def getULong(self):
 		return struct.unpack('<I',self.value)[0]
@@ -133,11 +156,11 @@ class Block:
 	def getLong(self):
 		return struct.unpack('<i',self.value)[0]
 	
-	def show(self,maxlevel=3,level=0, All=False):
+	def show(self,maxlevel=3,level=0, All=False, out=sys.stdout):
 		for l in self.getList():
 			if l['id']==0 or All:
-				print("{tab}{name} ({id}) @{bidx}".format(tab="\t"*level,**l))
+				out.write("{tab}{name} ({id}) @{bidx}\n".format(tab="\t"*level,**l))
 				if level<maxlevel:
-					try: self.gotoItem(l['name'],l['id']).show(maxlevel,level+1,All=All)
+					try: self.gotoItem(l['name'],l['id']).show(maxlevel,level+1,All=All,out=out)
 					except: pass
 	
