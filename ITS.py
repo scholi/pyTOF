@@ -1,4 +1,4 @@
-from ionTOF import Block
+from pyTOF import Block
 import numpy as np
 import struct
 import os.path
