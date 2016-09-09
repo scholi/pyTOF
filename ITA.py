@@ -88,7 +88,7 @@ class ITA:
 		return Shifts
 
 	def getXsectionByMass(self, x1, y1, x2, y2, masses, N=None, prog=False, **kargs):
-		if N is None: N = np.sqrt((x2-x1)**2+(y2-y1)**2)
+		if N is None: N = int(np.sqrt((x2-x1)**2+(y2-y1)**2))+1
 		x=np.linspace(x1,x2,N)
 		y=np.linspace(y1,y2,N)
 		out=np.zeros((self.Nscan,N))
