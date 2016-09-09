@@ -53,12 +53,15 @@ class ITA:
 				p=self.peaks[P]
 				print(p[b'id']['long'],p[b'desc']['utf16'],p[b'assign']['utf16'],p[b'lmass']['float'],p[b'cmass']['float'],p[b'umass']['float'])
 
-	def getSumImageByName(self, names, scans=None, **kargs):
+	def getSumImageByName(self, names, scans=None, prog=False, **kargs):
 		if scans is None:
 			scans = range(self.Nscan)
 		if type(scans)==int: scans=[scans]
 		Z = np.zeros((self.sy,self.sx))
 		channels = self.getChannelsByName(names)
+		if prog:
+			from tqdm import tqdm
+			scans=tqdm(scans)
 		for s in scans:
 			for ch in channels:
 				ID = ch[b'id']['long']
@@ -84,23 +87,30 @@ class ITA:
 			Shifts = [(z[0]-avSx,z[1]-avSy) for z in Shifts]
 		return Shifts
 
-	def getXsectionByMass(self, x1, y1, x2, y2, masses, N=None, **kargs):
+	def getXsectionByMass(self, x1, y1, x2, y2, masses, N=None, prog=False, **kargs):
 		if N is None: N = np.sqrt((x2-x1)**2+(y2-y1)**2)
 		x=np.linspace(x1,x2,N)
 		y=np.linspace(y1,y2,N)
 		out=np.zeros((self.Nscan,N))
-		for s in range(self.Nscan):
+		Y=range(self.Nscan)
+		if prog:
+			from tqdm import tqdm
+			Y=tqdm(Y)
+		for s in Y:
 			Z = self.getSumImageByMass(masses,s,**kargs)
 			P = scipy.ndimage.map_coordinates(Z,np.vstack((y,x)))
 			out[s,:] = P
 		return out
 	
-	def getSumImageByMass(self, masses, scans=None, **kargs):
+	def getSumImageByMass(self, masses, scans=None, prog=False, **kargs):
 		if scans is None:
 			scans = range(self.Nscan)
 		if type(scans)==int: scans = [scans]
 		if type(masses)==int or type(masses) == float: masses=[masses]
 		Z = np.zeros((self.sy,self.sx))
+		if prog:
+			from tqdm import tqdm
+			scans=tqdm(scans)
 		for s in scans:
 			assert s>=0 and s<self.Nscan
 			for m in masses:
