@@ -68,15 +68,16 @@ class ITA:
 				Z+=self.getImage(ID,s,**kargs)
 		return Z,channels
 
-	def getShiftsByMass(self, masses, centered=True, prog=False):
+	def getShiftsByMass(self, masses, centered=True, prog=False, Filter=None):
 		Shifts=[(0,0)]
-		S0 = self.getSumImageByMass(masses,0)
+		if Filter is None: Filter=lambda z: z
+		S0 = Filter(self.getSumImageByMass(masses,0))
 		Y = range(1,self.Nscan)
 		if prog:
 			from tqdm import tqdm
 			Y=tqdm(Y)
 		for i in Y:
-			S = self.getSumImageByMass(masses,i)
+			S = Filter(self.getSumImageByMass(masses,i))
 			Shift = np.real( np.fft.fftshift( np.fft.ifft2( np.conj(np.fft.fft2(S0)) * np.fft.fft2(S) ) ) )
 			cord = np.unravel_index(np.argmax(Shift),S0.shape)
 			trans = (cord[1]-S0.shape[1]/2,cord[0]-S0.shape[0]/2)

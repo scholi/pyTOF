@@ -29,3 +29,42 @@ class ITM:
 			S = self.getSize()
 			X,Y = S['pixels']['X'],S['pixels']['Y']
 			return np.array(struct.unpack('<'+str(X*Y)+'I',zlib.decompress(self.root.goto('Meta/SI Image/intensdata').value))).reshape((Y,X))
+
+	def getValues(self, pb=False):
+		Vals={}
+		List=self.root.goto('propend').getList()
+		if pb:
+			import tqdm
+			List=tqdm.tqdm(List)
+		for l in List:
+			Node = self.root.goto('propend').gotoItem(l['name'],l['id'])
+			r = Node.getKeyValue(16)
+			del Node
+			S=Vals
+			K=r['Key'].split('.')
+			for k in K:
+				if k not in S: S[k]={}
+				S=S[k]
+			S['value']=r['SVal']
+		return Vals
+		Data = self.root.goto('rawdata')
+		List=Data.getList()
+		if pb:
+			List=tqdm.tqdm(List)
+		for l in List:
+			if l['name']==b'  20':
+				Node = Data.gotoItem(l['name'],l['id'])
+				r = Node.getKeyValue()
+				del Node
+				S=Vals
+				K=r['Key'].split('.')
+				for k in K:
+					if k not in S: S[k]={}
+					S=S[k]
+				S['value']=r['SVal']
+		return Vals
+
+	def showValues(self, pb=False):
+		from pyTOF import GUI
+		GUI.ShowValues(self.getValues(pb))
+

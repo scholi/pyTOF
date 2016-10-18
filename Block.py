@@ -155,12 +155,31 @@ class Block:
 	
 	def getLong(self):
 		return struct.unpack('<i',self.value)[0]
+
+	def getKeyValue(self,offset=0):
+		L = struct.unpack("<I",self.value[offset:offset+4])[0]
+		Key = self.value[offset+4:offset+4+L].decode('utf16','ignore')
+		Value = struct.unpack("<10xd",self.value[offset+4+L:offset+22+L])[0]
+		L2 = struct.unpack("<I",self.value[offset+22+L:offset+26+L])[0]
+		SVal = self.value[offset+26+L:offset+26+L+L2].decode('utf16','ignore')
+		return {'Key':Key,'Value':Value,'SVal':SVal}
 	
-	def show(self,maxlevel=3,level=0, All=False, out=sys.stdout):
+	def show(self,maxlevel=3,level=0, All=False, out=sys.stdout, digraph=False, parent=None,ex=None):
+		if not ex is None:
+			ex(self)
+		if parent==None: parent=self.name.decode('utf8')
+		if digraph and level==0:
+			out.write('digraph {{\n graph [nodesep=.1 rankdir=LR size="10,120"]\n'.format(root=parent))
 		for l in self.getList():
 			if l['id']==0 or All:
-				out.write("{tab}{name} ({id}) @{bidx}\n".format(tab="\t"*level,**l))
+				if digraph:
+					out.write('"{parent}-{name}" [label="{name}"]\n"{parent}" -> "{parent}-{name}"\n'.format(parent=parent,name=l['name'].decode('utf8')))
+				else:
+					if ex is None:
+						out.write("{tab}{name} ({id}) @{bidx}\n".format(tab="\t"*level,**l))
 				if level<maxlevel:
-					try: self.gotoItem(l['name'],l['id']).show(maxlevel,level+1,All=All,out=out)
+					try: self.gotoItem(l['name'],l['id']).show(maxlevel,level+1,All=All,out=out,digraph=digraph,parent=parent+'-'+l['name'].decode('utf8'),ex=ex)
 					except: pass
+		if digraph and level==0:
+			out.write('}')
 	
