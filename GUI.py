@@ -12,7 +12,7 @@ class GUI_values(QtGui.QWidget):
 		self.setLayout(layout)
 
 	def addItems(self, parent, elements):
-		for k in elements.keys():
+		for k in sorted(elements.keys()):
 				item = QtGui.QStandardItem(k)
 				parent.appendRow(item)
 				if type(elements[k])==dict:
