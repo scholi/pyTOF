@@ -24,9 +24,9 @@ class ITA:
 		R=[z for z in self.root.goto('MassIntervalList').getList() if z['name'].decode()=='mi']
 		N=len(R)
 		self.peaks={}
-		for i in range(N):
+		for x in R:
 			try:
-				X = self.root.goto('MassIntervalList/mi['+str(i)+']')
+				X = self.root.goto('MassIntervalList/mi['+str(x['id'])+']')
 				d = X.dictList()
 				self.peaks[d[b'id']['long']]=d
 			except ValueError:
@@ -40,13 +40,19 @@ class ITA:
 			if ma.match(p[b'assign']['utf16']) or ma.match(p[b'desc']['utf16']):
 				res.append(p)
 		return res
+	
+	def showPeaks(self):
+		self.getMassInt()
+		for p in self.peaks:
+			P={k.decode('utf8'):self.peaks[p][k] for k in self.peaks[p]}
+			print("{0}) {peaklabel}".format(p,**P))
 
 	def getChannelByMass(self, mass):
 		for P in self.peaks:
 			p=self.peaks[P]
 			if p[b'id']['long']>1 and p[b'lmass']['float']<=mass and mass<=p[b'umass']['float']:
 				return p[b'id']['long']
-		return None
+		return 0
 			
 	def showMassInt(self):
 			for P in self.peaks:
