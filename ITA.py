@@ -5,6 +5,7 @@ import os.path
 import zlib
 import re
 import scipy
+import scipy.ndimage
 
 class ITA:
 	def __init__(self, filename):
