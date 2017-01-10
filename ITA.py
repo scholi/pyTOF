@@ -95,12 +95,14 @@ class ITA:
 			Shifts = [(z[0]-avSx,z[1]-avSy) for z in Shifts]
 		return Shifts
 
-	def getXsectionByMass(self, x1, y1, x2, y2, masses, N=None, prog=False, **kargs):
+	def getXsectionByMass(self, x1, y1, x2, y2, masses, N=None, prog=False, ax=None, col='w-',**kargs):
 		if N is None: N = int(np.sqrt((x2-x1)**2+(y2-y1)**2))+1
 		x=np.linspace(x1,x2,N)
 		y=np.linspace(y1,y2,N)
 		out=np.zeros((self.Nscan,N))
 		Y=range(self.Nscan)
+		if ax is not None:
+			ax.plot([x1,x2],[y1,y2],col)
 		if prog:
 			from tqdm import tqdm
 			Y=tqdm(Y)
