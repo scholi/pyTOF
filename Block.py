@@ -16,6 +16,7 @@ class Block:
 		self.name = self.f.read(self.head['length'])
 		self.value = self.f.read(self.head['x'])
 		self.List=None
+		self.iterP=0
 		
 	def getName(self):
 		return self.name
@@ -109,11 +110,12 @@ class Block:
 		return self
 
 	def __next__(self):
-		if self.pointer>=len(self.getList()): raise StopIteration
-		self.f.seek(self.List[self.pointer]['bidx'])
+		L=self.getList()
+		if self.pointer>=len(L): raise StopIteration
+		it = L[self.pointer]
 		self.pointer+=1
-		return Block(self.f)
-
+		return self.gotoItem(it['name'],it['id'])
+	
 	def gotoItem(self, name, idx=0):
 		Idx = self.getIndex(name,idx)
 		self.f.seek(Idx)
@@ -182,4 +184,10 @@ class Block:
 					except: pass
 		if digraph and level==0:
 			out.write('}')
-	
+
+	def getIndexes(self, key):
+		r=[]
+		for x in self.getList():
+			if x['name']==key.decode('utf8'):
+				r.append(x['id'])
+		return r
