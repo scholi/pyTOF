@@ -85,6 +85,7 @@ class PCA:
 		ax = ax if ax is not None else plt.gca()
 		y = np.std(self.pca.transform(self.standX), axis=0)**2
 		x = np.arange(len(y)) + 1
+		ax.grid(True)
 		ax.plot(x,y, "o-")
 		ax.set_xticks(x)
 		ax.set_xticklabels(["Comp."+str(i) for i in x], rotation=60)
@@ -107,6 +108,13 @@ class PCA:
 	def pca_scatter(self, classifs):
 		if self.pcs is None:
 			self.runPCA()
+		foo = self.pca.transform(self.standX)
+		bar = pd.DataFrame(zip(foo[:, 0], foo[:, 1], classifs), columns=["PC1", "PC2", "Class"])
+		sns.lmplot("PC1", "PC2", bar, hue="Class", fit_reg=False)
+	
+	def pca_scatter(self, classifs):
+		if self.pca is None:
+			self.pca=self.runPCA()
 		foo = self.pca.transform(self.standX)
 		bar = pd.DataFrame(zip(foo[:, 0], foo[:, 1], classifs), columns=["PC1", "PC2", "Class"])
 		sns.lmplot("PC1", "PC2", bar, hue="Class", fit_reg=False)

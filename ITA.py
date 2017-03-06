@@ -168,6 +168,15 @@ class ITA:
 			out[s,:] = P
 		return out
 
+	def getAddedImageByName(self, names, **kargs):
+		if type(masses)==int or type(masses) == float: masses=[masses]
+		Z = np.zeros((self.sy,self.sx))
+		channels = self.getChannelsByName(names)
+		for ch in channels:
+			ID = ch[b'id']['long']
+			Z+=self.getAddedImage(ID,**kargs)
+		return Z
+		
 	def getSavedShift(self):
 		"""
 		getSavedShift returns the shifts saved with the file. Usually this is the shift correction you perform with the IonToF software.
@@ -194,6 +203,22 @@ class ITA:
 				Z+=self.getImage(ch,s,**kargs)
 		return Z
 
+	def getAddedImageByMass(self, masses, **kargs):
+		if type(masses)==int or type(masses) == float: masses=[masses]
+		Z = np.zeros((self.sy,self.sx))
+		for m in masses:
+			ch = self.getChannelByMass(m)
+			Z+=self.getAddedImage(ch,**kargs)
+		return Z
+		
+	def getAddedImage(self, channel, **kargs):
+		assert type(channel) == int
+		assert channel>=0 and channel<self.Nimg
+		c = self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScansAdded/Image['+str(channel)+']/ImageArray.Long')
+		D = zlib.decompress(c.value)
+		V = np.array(struct.unpack('<'+str(self.sx*self.sy)+'I',D),dtype=np.float).reshape((self.sy,self.sx))
+		return V
+		
 	def getImage(self, channel, scan, Shifts=None, ShiftMode='roll',**kargs):
 		"""
 		getImage retrieve the image of a specific channel (ID) and a specific scan.
@@ -228,24 +253,27 @@ class ITA:
 		return V
 
 class ITA_collection(collection):
-	def __init__(self,filename,channels,name=None,mass=False):
+	def __init__(self, filename, channels, name=None, mass=False):
 		self.ita = ITA(filename)
+		self.filename=filename
 		self.P = None
+		self.channels=channels
 		if name is None:
 			name=filename
+		self.name=name
 		collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
 		if type(channels) is list:
 			for x in channels:
 				if mass:
-					self.add(self.ita.getSumImageByMass(utils.Elts[x],prog=True),x)
+					self.add(self.ita.getAddedImageByMass(utils.Elts[x],prog=True),x)
 				else:
-					self.add(self.ita.getSumImageByName(x,prog=True)[0],x)
+					self.add(self.ita.getAddedImageByName(x,prog=True)[0],x)
 		elif type(channels) is dict:
 			for x in channels:
 				if mass:
-					self.add(self.ita.getSumImageByMass(channels[x],prog=True),x)
+					self.add(self.ita.getAddedImageByMass(channels[x],prog=True),x)
 				else:
-					self.add(self.ita.getChannelsByName(channels[x],prog=True),x)
+					self.add(self.ita.getAddedImageByName(channels[x],prog=True),x)
 		else:
 			raise TypeError("Channels should be a list or a dictionnary")
 		
@@ -263,3 +291,20 @@ class ITA_collection(collection):
 		if self.P is None:
 			self.getPCA()
 		return self.P.loadings()
+		
+	def StitchCorrection(self, channel, stitches):
+		N = ITA_collection(self.filename, [], name=self.name)
+		size = list(self.CH.values())[0].shape
+		S=np.zeros((int(size[0]/stitches[0]),int(size[1]/stitches[1])))
+		for i in range(stitches[0]):
+			for j in range(stitches[1]):
+				S+=self.CH[channel][128*i:128*(i+1),128*j:128*(j+1)]
+		S[S==0]=1
+		for x in self.CH:
+			F = np.zeros(size)
+			for i in range(stitches[0]):
+				for j in range(stitches[1]):
+					F[128*i:128*(i+1),128*j:128*(j+1)]=self.CH[x][128*i:128*(i+1),128*j:128*(j+1)]/S
+			N.add(F,x)
+		return N
+		
