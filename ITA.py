@@ -169,7 +169,6 @@ class ITA:
 		return out
 
 	def getAddedImageByName(self, names, **kargs):
-		if type(masses)==int or type(masses) == float: masses=[masses]
 		Z = np.zeros((self.sy,self.sx))
 		channels = self.getChannelsByName(names)
 		for ch in channels:
@@ -265,15 +264,15 @@ class ITA_collection(collection):
 		if type(channels) is list:
 			for x in channels:
 				if mass:
-					self.add(self.ita.getAddedImageByMass(utils.Elts[x],prog=True),x)
+					self.add(self.ita.getAddedImageByMass(utils.Elts[x]),x)
 				else:
-					self.add(self.ita.getAddedImageByName(x,prog=True)[0],x)
+					self.add(self.ita.getAddedImageByName(x),x)
 		elif type(channels) is dict:
 			for x in channels:
 				if mass:
-					self.add(self.ita.getAddedImageByMass(channels[x],prog=True),x)
+					self.add(self.ita.getAddedImageByMass(channels[x]),x)
 				else:
-					self.add(self.ita.getAddedImageByName(channels[x],prog=True),x)
+					self.add(self.ita.getAddedImageByName(channels[x]),x)
 		else:
 			raise TypeError("Channels should be a list or a dictionnary")
 		
