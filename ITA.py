@@ -1,4 +1,3 @@
-from pyTOF import Block
 import numpy as np
 import struct
 import os.path
@@ -8,6 +7,8 @@ import scipy
 import scipy.ndimage
 import matplotlib.pyplot as plt
 import pickle
+from pySPM.collection import collection
+from pyTOF import Block,utils, PCA
 
 class ITA:
 	def __init__(self, filename):
@@ -96,7 +97,7 @@ class ITA:
 			p=self.peaks[P]
 			if p[b'id']['long']>1 and p[b'lmass']['float']<=mass and mass<=p[b'umass']['float']:
 				return p[b'id']['long']
-		return 0
+		raise ValueError('Mass {:.2f} Not Found'.format(mass))
 			
 	def showMassInt(self):
 			for P in self.peaks:
@@ -225,3 +226,40 @@ class ITA:
 				elif r[0]>0:
 					V[:,-r[0]:] = kargs['const']
 		return V
+
+class ITA_collection(collection):
+	def __init__(self,filename,channels,name=None,mass=False):
+		self.ita = ITA(filename)
+		self.P = None
+		if name is None:
+			name=filename
+		collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
+		if type(channels) is list:
+			for x in channels:
+				if mass:
+					self.add(self.ita.getSumImageByMass(utils.Elts[x],prog=True),x)
+				else:
+					self.add(self.ita.getSumImageByName(x,prog=True)[0],x)
+		elif type(channels) is dict:
+			for x in channels:
+				if mass:
+					self.add(self.ita.getSumImageByMass(channels[x],prog=True),x)
+				else:
+					self.add(self.ita.getChannelsByName(channels[x],prog=True),x)
+		else:
+			raise TypeError("Channels should be a list or a dictionnary")
+		
+	def getPCA(self, channels=None):
+		if channels is None:
+			channels=self.CH.keys()
+		self.P = PCA.ITA_PCA(self,channels)
+	
+	def showPCA(self, **kargs):
+		if self.P is None:
+			self.getPCA()
+		self.P.showPCA(**kargs)
+	
+	def loadings(self):
+		if self.P is None:
+			self.getPCA()
+		return self.P.loadings()
