@@ -8,6 +8,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from pySPM.SPM import SPM_image
 import matplotlib as mpl
+from matplotlib import cm
 
 class PCA:
 	def __init__(self, data):
@@ -105,19 +106,25 @@ class PCA:
 			return pd.DataFrame(self.pca.components_[id,None],columns=self.data.columns)
 		return pd.DataFrame(self.pca.components_,columns=self.data.columns)
 	
-	def pca_scatter(self, classifs):
-		if self.pcs is None:
-			self.runPCA()
-		foo = self.pca.transform(self.standX)
-		bar = pd.DataFrame(zip(foo[:, 0], foo[:, 1], classifs), columns=["PC1", "PC2", "Class"])
-		sns.lmplot("PC1", "PC2", bar, hue="Class", fit_reg=False)
-	
-	def pca_scatter(self, classifs):
+	def getPCAtransf(self):
 		if self.pca is None:
-			self.pca=self.runPCA()
-		foo = self.pca.transform(self.standX)
-		bar = pd.DataFrame(zip(foo[:, 0], foo[:, 1], classifs), columns=["PC1", "PC2", "Class"])
-		sns.lmplot("PC1", "PC2", bar, hue="Class", fit_reg=False)
+			self.runPCA()
+		return self.pca.transform(self.standX)
+		
+	def pca_scatter(self, classifs=None, light=False):
+		foo = self.getPCAtransf()
+		if classifs is None:
+			if light:
+				plt.scatter(foo[:,0],foo[:,1])
+			else:
+				bar = pd.DataFrame(list(zip(foo[:, 0], foo[:, 1])), columns=["PC1", "PC2"])
+				sns.lmplot("PC1", "PC2", bar, fit_reg=False)
+		else:
+			if light:
+				plt.scatter(foo[:,0],foo[:,1],color=cm.Scalar)
+			else:
+				bar = pd.DataFrame(list(zip(foo[:, 0], foo[:, 1], classifs)), columns=["PC1", "PC2", "Class"])
+				sns.lmplot("PC1", "PC2", bar, hue="Class", fit_reg=False)
 		
 class ITA_PCA(PCA):
 	def __init__(self, c, channels=None):
