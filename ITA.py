@@ -77,13 +77,18 @@ class ITA:
 		ax.set_xlim((0,W))
 		ax.set_ylim((0,H));
 
-	def getChannelsByName(self, name):
+	def getChannelsByName(self, name, strict=False):
 		res=[]
-		for P in self.peaks:
-			p=self.peaks[P]
-			ma=re.compile(name,re.I+re.U)
-			if ma.match(p[b'assign']['utf16']) or ma.match(p[b'desc']['utf16']):
-				res.append(p)
+		if strict:
+			name='^'+name+'[+-]?$'
+		if type(name) is not list:
+			name=[name]
+		for n in name:
+			for P in self.peaks:
+				p=self.peaks[P]
+				ma=re.compile(n,re.I+re.U)
+				if ma.match(p[b'assign']['utf16']) or ma.match(p[b'desc']['utf16']):
+					res.append(p)
 		return res
 	
 	def showPeaks(self):
@@ -106,12 +111,12 @@ class ITA:
 				p=self.peaks[P]
 				print(p[b'id']['long'],p[b'desc']['utf16'],p[b'assign']['utf16'],p[b'lmass']['float'],p[b'cmass']['float'],p[b'umass']['float'])
 
-	def getSumImageByName(self, names, scans=None, prog=False, **kargs):
+	def getSumImageByName(self, names, scans=None, strict=False, prog=False, **kargs):
 		if scans is None:
 			scans = range(self.Nscan)
 		if type(scans)==int: scans=[scans]
 		Z = np.zeros((self.sy,self.sx))
-		channels = self.getChannelsByName(names)
+		channels = self.getChannelsByName(names, strict)
 		if prog:
 			from tqdm import tqdm
 			scans=tqdm(scans)
@@ -170,9 +175,9 @@ class ITA:
 			out[s,:] = P
 		return out
 
-	def getAddedImageByName(self, names, **kargs):
+	def getAddedImageByName(self, names, strict=False, **kargs):
 		Z = np.zeros((self.sy,self.sx))
-		channels = self.getChannelsByName(names)
+		channels = self.getChannelsByName(names, strict)
 		for ch in channels:
 			ID = ch[b'id']['long']
 			Z+=self.getAddedImage(ID,**kargs)
@@ -254,38 +259,42 @@ class ITA:
 		return V
 
 class ITA_collection(collection):
-	def __init__(self, filename, channels, name=None, mass=False):
+	def __init__(self, filename, channels1 ,channels2=None, name=None, mass=False, strict=False):
 		self.ita = ITA(filename)
 		self.filename=filename
 		self.P = None
-		self.channels=channels
+		self.channels={}
+		self.channels=channels1
 		if name is None:
 			name=filename
 		self.name=name
 		collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
 		self.msg=""
-		if type(channels) is list:
-			for x in channels:
-				if mass:
-					self.add(self.ita.getAddedImageByMass(utils.Elts[x]),x)
-				else:
-					Z, ch = self.ita.getAddedImageByName(x)
-					self.msg+="{0}\n".format(x)
-					for z in ch:
-						self.msg+="\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}\n".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float'])
-					self.add(Z,x)
-		elif type(channels) is dict:
-			for x in channels:
-				if mass:
-					self.add(self.ita.getAddedImageByMass(channels[x]),x)
-				else:
-					Z, ch = self.ita.getAddedImageByName(channels[x])
-					self.msg+="{0}\n".format(x)
-					for z in ch:
-						self.msg+="\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}\n".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float'])
-					self.add(Z,x)
-		else:
-			raise TypeError("Channels should be a list or a dictionnary")
+		for channels in [channels1,channels2]:
+			if channels is channels2:
+				strict=False
+			if type(channels) is list:
+				for x in channels:
+					if mass:
+						self.add(self.ita.getAddedImageByMass(utils.Elts[x]),x)
+					else:
+						Z, ch = self.ita.getAddedImageByName(x,strict)
+						self.msg+="{0}\n".format(x)
+						for z in ch:
+							self.msg+="\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}\n".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float'])
+						self.add(Z,x)
+			elif type(channels) is dict:
+				for x in channels:
+					if mass:
+						self.add(self.ita.getAddedImageByMass(channels[x]),x)
+					else:
+						Z, ch = self.ita.getAddedImageByName(channels[x],strict)
+						self.msg+="{0}\n".format(x)
+						for z in ch:
+							self.msg+="\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}\n".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float'])
+						self.add(Z,x)
+			else:
+				raise TypeError("Channels should be a list or a dictionnary")
 		
 	def getPCA(self, channels=None):
 		if channels is None:
