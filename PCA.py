@@ -110,7 +110,10 @@ class PCA:
 		if self.pca is None:
 			self.runPCA()
 		return self.pca.transform(self.standX)
-		
+	
+	def showStand(self):
+		return pd.DataFrame([self.standX.apply(np.mean),self.standX.apply(np.std)],index=['Mean','Std'])
+	
 	def pca_scatter(self, classifs=None, light=False):
 		foo = self.getPCAtransf()
 		if classifs is None:

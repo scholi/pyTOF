@@ -263,18 +263,27 @@ class ITA_collection(collection):
 			name=filename
 		self.name=name
 		collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
+		self.msg=""
 		if type(channels) is list:
 			for x in channels:
 				if mass:
 					self.add(self.ita.getAddedImageByMass(utils.Elts[x]),x)
 				else:
-					self.add(self.ita.getAddedImageByName(x),x)
+					Z, ch = self.ita.getAddedImageByName(x)
+					self.msg+="{0}\n".format(x)
+					for z in ch:
+						self.msg+="\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}\n".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float'])
+					self.add(Z,x)
 		elif type(channels) is dict:
 			for x in channels:
 				if mass:
 					self.add(self.ita.getAddedImageByMass(channels[x]),x)
 				else:
-					self.add(self.ita.getAddedImageByName(channels[x]),x)
+					Z, ch = self.ita.getAddedImageByName(channels[x])
+					self.msg+="{0}\n".format(x)
+					for z in ch:
+						self.msg+="\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}\n".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float'])
+					self.add(Z,x)
 		else:
 			raise TypeError("Channels should be a list or a dictionnary")
 		
