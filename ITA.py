@@ -93,6 +93,8 @@ class ITA:
 			print("{0}) {peaklabel}".format(p,**P))
 
 	def getChannelByMass(self, mass):
+		if mass ==0:
+			return 0
 		for P in self.peaks:
 			p=self.peaks[P]
 			if p[b'id']['long']>1 and p[b'lmass']['float']<=mass and mass<=p[b'umass']['float']:
@@ -174,7 +176,7 @@ class ITA:
 		for ch in channels:
 			ID = ch[b'id']['long']
 			Z+=self.getAddedImage(ID,**kargs)
-		return Z
+		return Z, channels
 		
 	def getSavedShift(self):
 		"""
