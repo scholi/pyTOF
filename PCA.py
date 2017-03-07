@@ -105,7 +105,7 @@ class PCA:
 			self.runPCA()
 		if id is not None:
 			return pd.DataFrame(self.pca.components_[id,None],columns=self.data.columns)
-		return pd.DataFrame(self.pca.components_,columns=self.data.columns)
+		return pd.DataFrame(self.pca.components_,columns=self.data.columns,index=["PC{0}".format(i+1) for i in range(len(self.pca.components_))])
 	
 	def getPCAtransf(self):
 		if self.pca is None:
