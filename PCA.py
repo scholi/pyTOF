@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from pySPM.SPM import SPM_image
 import matplotlib as mpl
 from matplotlib import cm
+from pySPM import collection
 
 class PCA:
 	def __init__(self, data):
@@ -139,19 +140,21 @@ class ITA_PCA(PCA):
 		PCA.__init__(self, mul)
 	
 	def showPCA(self, num=None, ax=None):
-		mpl.rc('axes',grid=False)
+		c = self.getPCAcol(num)
+		c.show(ax=ax,cmap='hot')
+		
+	def getPCAcol(self, num=None):
 		if num is None:
 			num=self.data.shape[1]
-		if ax is None:
-			fig, ax = plt.subplots(1,num,figsize=(20,20/num))
-		assert len(ax)>=num
 		assert num<=self.data.shape[1]
+		PCA_col = collection.collection(cls=self.col,name=self.col.name+"[PCA]")
 		for i in range(num):
 			PC=self.getPCA(i)
-			PC.show(ax=ax[i],cmap='hot')
+			PCA_col.add(PC,'PC{0}'.format(i+1))
+		return PCA_col
 			
 	def getPCA(self,id=0):
 		s=list(self.col.CH.values())[0].shape
 		PC = self.pc(id).reshape(s)
-		return SPM_image(_type=self.col.name,BIN=PC,real=self.col.size,channel='PC{0}'.format(id+1))
+		return PC
 		
