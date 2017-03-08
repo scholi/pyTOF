@@ -23,11 +23,16 @@ class ITA:
 		self.sy = self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.YSize').getLong()
 		self.Nscan = int(self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.NumberOfScans').getLong())
 		self.Nimg = int(self.root.goto('filterdata/TofCorrection/ImageStack/Reduced Data/ImageStackScans/Image.NumberOfImages').getLong())
-		RAW         = zlib.decompress(self.root.goto('Meta/SI Image[0]/intensdata').value)
+		
 		self.Width  = self.root.goto('Meta/SI Image[0]/res_x').getLong()
 		self.Height = self.root.goto('Meta/SI Image[0]/res_y').getLong()
-		data        = struct.unpack("<{0}I".format(self.Width*self.Height),RAW)
-		self.img    = np.array(data).reshape((self.Height,self.Width))
+		
+		try:
+			RAW         = zlib.decompress(self.root.goto('Meta/SI Image[0]/intensdata').value)
+			data        = struct.unpack("<{0}I".format(self.Width*self.Height),RAW)
+			self.img    = np.array(data).reshape((self.Height,self.Width))
+		except:
+			self.img = None
 		self.fov    = self.root.goto('Meta/SI Image[0]/fieldofview').getDouble()
 
 	def getMassInt(self):
@@ -86,11 +91,15 @@ class ITA:
 		for n in name:
 			for P in self.peaks:
 				p=self.peaks[P]
-				ma=re.compile(n,re.I+re.U)
+				ma=re.compile(n,re.U)
 				if ma.match(p[b'assign']['utf16']) or ma.match(p[b'desc']['utf16']):
 					res.append(p)
 		return res
-	
+		
+	def showChannels(self, ch):
+		for z in ch:
+			print("\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float']))
+			
 	def showPeaks(self):
 		self.getMassInt()
 		for p in self.peaks:
@@ -270,7 +279,10 @@ class ITA_collection(collection):
 		self.name=name
 		collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
 		self.msg=""
-		for channels in [channels1,channels2]:
+		CHS=[channels1]
+		if channels2 is not None:
+			CHS.append(channels2)
+		for channels in CHS:
 			if channels is channels2:
 				strict=False
 			if type(channels) is list:
@@ -294,7 +306,7 @@ class ITA_collection(collection):
 							self.msg+="\t{name} ({desc}), mass: {lower:.2f} - {upper:.2f}\n".format(desc=z[b'desc']['utf16'],name=z[b'assign']['utf16'],lower=z[b'lmass']['float'],upper=z[b'umass']['float'])
 						self.add(Z,x)
 			else:
-				raise TypeError("Channels should be a list or a dictionnary")
+				raise TypeError("Channels should be a list or a dictionnary. Got {}".format(type(channels)))
 		
 	def getPCA(self, channels=None):
 		if channels is None:
