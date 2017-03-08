@@ -47,6 +47,17 @@ class ITA:
 			except ValueError:
 				pass
 
+	def getSpectrum(self):
+		RAW = zlib.decompress(self.root.goto('filterdata/TofCorrection/Spectrum/Reduced Data/IITFSpecArray/CorrectedData').value)
+		D   = struct.unpack("<{0}f".format(len(RAW)//4),RAW)
+		ch  = np.arange(len(D))
+		V   = self.root.goto('filterdata/TofCorrection/Spectrum/Reduced Data/IMassScaleSFK0')
+		sf  = V.goto('sf').getDouble()
+		k0  = V.goto('k0').getDouble()
+		chW = V.goto('channelwidth').getDouble()*1e-6
+		masses = ((ch+k0)/(sf/2))**2
+		return masses,D
+		
 	def showStage(self, ax = None, markers=False):
 		"""
 		Display an image of the stage used

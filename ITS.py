@@ -20,5 +20,9 @@ class ITS:
 		ch = np.arange(N)
 		# The channel-mass conversion was found empirically from data
 		# There is no guarenty that this will be correct for all Data!!!
-		masses = np.polyval([8.75206913e-10,1.82528185e-06,9.51676243e-04],ch)
+		V   = self.root.goto('filterdata/TofCorrection/Spectrum/Reduced Data/IMassScaleSFK0')
+		sf  = V.goto('sf').getDouble()
+		k0  = V.goto('k0').getDouble()
+		chW = V.goto('channelwidth').getDouble()*1e-6
+		masses = ((ch+k0)/(sf/2))**2
 		return masses,np.array(struct.unpack('<'+str(N)+'f',X))
