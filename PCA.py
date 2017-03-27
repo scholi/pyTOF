@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import seaborn as sns
 from sklearn.preprocessing import scale
 from sklearn.decomposition import PCA as PCA1
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -26,6 +25,7 @@ class PCA:
 		return corrmat
 	
 	def corrShow(self):
+		import seaborn as sns
 		corrmat=self.corr()
 		sns.heatmap(corrmat).xaxis.tick_top()
 	
@@ -116,6 +116,7 @@ class PCA:
 		return pd.DataFrame([self.standX.apply(np.mean),self.standX.apply(np.std)],index=['Mean','Std'])
 	
 	def pca_scatter(self, classifs=None, light=False):
+		import seaborn as sns
 		foo = self.getPCAtransf()
 		if classifs is None:
 			if light:
