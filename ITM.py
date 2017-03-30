@@ -70,7 +70,7 @@ class ITM:
 		
 	def getSpectrum(self):
 		RAW = zlib.decompress(self.root.goto('filterdata/TofCorrection/Spectrum/Reduced Data/IITFSpecArray/CorrectedData').value)
-		D   = struct.unpack("<{0}f".format(len(RAW)//4),RAW)
+		D   = np.array(struct.unpack("<{0}f".format(len(RAW)//4),RAW))
 		ch  = np.arange(len(D))
 		V   = self.root.goto('filterdata/TofCorrection/Spectrum/Reduced Data/IMassScaleSFK0')
 		sf  = V.goto('sf').getDouble()
@@ -79,6 +79,31 @@ class ITM:
 		masses = ((ch-k0/2)/(sf/2))**2
 		return masses,D
 
+	def showSpectrum(self, low=0, high=None,ax=None, log = False):
+		m,s = self.getSpectrum()
+		if ax is None:
+			import matplotlib.pyplot as plt
+			ax = plt.gca()
+		if high is None:
+			high=m[-1]
+		mask = np.logical_and(m>=low,m<=high)
+		M=m[mask]
+		S=s[mask]
+		if log:
+			S=np.log(S)
+		ax.plot(M,S)
+		self.getMassInt()
+		
+		for P in self.peaks:
+			p=self.peaks[P]
+			c=p[b'cmass']['float']
+			mask = (m>=p[b'lmass']['float'])*(m<=p[b'umass']['float'])
+			if c>=low and c<=high:
+				i=np.argmin(abs(m-c))
+				ax.axvline(m[i],color='red')
+				ax.fill_between(m[mask],*ax.get_ylim(),color='red',alpha=.2)
+				ax.annotate(p[b'assign']['utf16'],(m[i],ax.get_ylim()[1]),(2,-10),va='top',textcoords='offset points')
+			
 	def getMassInt(self):
 		R=[z for z in self.root.goto('MassIntervalList').getList() if z['name'].decode()=='mi']
 		N=len(R)
@@ -91,6 +116,12 @@ class ITM:
 			except ValueError:
 				pass
 				
+	def showMassInt(self):
+		self.getMassInt()
+		for P in self.peaks:
+			p=self.peaks[P]
+			print(p[b'id']['long'],p[b'desc']['utf16'],p[b'assign']['utf16'],p[b'lmass']['float'],p[b'cmass']['float'],p[b'umass']['float'])
+			
 	def showStage(self, ax = None, markers=False):
 		"""
 		Display an image of the stage used
@@ -126,13 +157,6 @@ class ITM:
 				ax.plot(pos[0],pos[1],'xr');
 		ax.set_xlim((0,W))
 		ax.set_ylim((0,H));
-		
-	def showMassInt(self):
-		self.getMassInt()
-		for P in self.peaks:
-			p=self.peaks[P]
-			print(p[b'id']['long'],p[b'desc']['utf16'],p[b'assign']['utf16'],p[b'lmass']['float'],p[b'cmass']['float'],p[b'umass']['float'])
-
 				
 	def showPeaks(self):
 		self.getMassInt()

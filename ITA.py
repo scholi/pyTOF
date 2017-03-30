@@ -8,6 +8,7 @@ import scipy.ndimage
 import matplotlib.pyplot as plt
 import pickle
 from pySPM.collection import collection
+from pySPM.SPM import SPM_image
 from pyTOF import Block,utils, PCA, ITM
 
 class ITA(ITM.ITM):
@@ -212,7 +213,7 @@ class ITA_collection(collection):
 		self.channels={}
 		self.channels=channels1
 		if name is None:
-			name=filename
+			name=os.path.basename(filename)
 		self.name=name
 		collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
 		self.msg=""
@@ -244,6 +245,9 @@ class ITA_collection(collection):
 						self.add(Z,x)
 			else:
 				raise TypeError("Channels should be a list or a dictionnary. Got {}".format(type(channels)))
+	def __getitem__(self, key):
+		if key not in self.CH: return None
+		return SPM_image(_type=self.name,BIN=np.flipud(self.CH[key]),real=self.size,channel=key)
 		
 	def getPCA(self, channels=None):
 		if channels is None:
