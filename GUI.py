@@ -1,28 +1,29 @@
-from PyQt4 import QtCore, QtGui
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QWidget, QApplication, QTreeView, QVBoxLayout
 
-class GUI_values(QtGui.QWidget):
+class GUI_values(QWidget):
 	def __init__(self, data):
-		QtGui.QWidget.__init__(self)
-		self.treeView = QtGui.QTreeView()
-		self.model = QtGui.QStandardItemModel()
-		self.addItems(self.model,data)
+		QWidget.__init__(self)
+		self.treeView = QTreeView()
+		self.model = QStandardItemModel()
+		self.addItems(self.model, data)
 		self.treeView.setModel(self.model)
-		layout = QtGui.QVBoxLayout()
+		layout = QVBoxLayout()
 		layout.addWidget(self.treeView)
 		self.setLayout(layout)
 
 	def addItems(self, parent, elements):
 		for k in sorted(elements.keys()):
-				item = QtGui.QStandardItem(k)
+				item = QStandardItem(k)
 				parent.appendRow(item)
 				if type(elements[k])==dict:
 					self.addItems(item, elements[k])
 				else:
-					child = QtGui.QStandardItem(str(elements[k]))
+					child = QStandardItem(str(elements[k]))
 					item.appendRow(child)
 
 def ShowValues(data):
-	app = QtGui.QApplication([])
+	app = QApplication([])
 	G = GUI_values(data)
 	G.show()
 	app.exec_()
