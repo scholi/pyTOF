@@ -268,7 +268,7 @@ class ITA_collection(Collection):
 	def __getitem__(self, key):
 		if key not in self.channels:
 			return None
-		return SPM_image(_type=self.name, BIN=np.flipud(self.channels[key]), real=self.size, channel=key)
+		return SPM_image(np.flipud(self.channels[key]), real=self.size, channel=key, _type=self.name)
 		
 	def getPCA(self, channels=None):
 		if channels is None:
