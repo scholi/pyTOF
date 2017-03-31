@@ -7,7 +7,7 @@ import scipy
 import scipy.ndimage
 import matplotlib.pyplot as plt
 import pickle
-from pySPM.collection import collection
+from pySPM.collection import Collection
 from pySPM.SPM import SPM_image
 from pyTOF import Block,utils, PCA, ITM
 
@@ -205,7 +205,7 @@ class ITA(ITM.ITM):
 					V[:,-r[0]:] = kargs['const']
 		return V
 
-class ITA_collection(collection):
+class ITA_collection(Collection):
 	def __init__(self, filename, channels1 ,channels2=None, name=None, mass=False, strict=False):
 		self.ita = ITA(filename)
 		self.filename=filename
@@ -215,7 +215,7 @@ class ITA_collection(collection):
 		if name is None:
 			name=os.path.basename(filename)
 		self.name=name
-		collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
+		Collection.__init__(self,sx=self.ita.fov,sy=self.ita.fov*self.ita.sy/self.ita.sx,unit='m',name=name)
 		self.msg=""
 		CHS=[channels1]
 		if channels2 is not None:
@@ -246,12 +246,12 @@ class ITA_collection(collection):
 			else:
 				raise TypeError("Channels should be a list or a dictionnary. Got {}".format(type(channels)))
 	def __getitem__(self, key):
-		if key not in self.CH: return None
-		return SPM_image(_type=self.name,BIN=np.flipud(self.CH[key]),real=self.size,channel=key)
+		if key not in self.channels: return None
+		return SPM_image(_type=self.name,BIN=np.flipud(self.channels[key]),real=self.size,channel=key)
 		
 	def getPCA(self, channels=None):
 		if channels is None:
-			channels=self.CH.keys()
+			channels=self.channels.keys()
 		self.P = PCA.ITA_PCA(self,channels)
 	
 	def showPCA(self, **kargs):
@@ -266,17 +266,17 @@ class ITA_collection(collection):
 		
 	def StitchCorrection(self, channel, stitches):
 		N = ITA_collection(self.filename, [], name=self.name)
-		size = list(self.CH.values())[0].shape
+		size = list(self.channels.values())[0].shape
 		S=np.zeros((int(size[0]/stitches[0]),int(size[1]/stitches[1])))
 		for i in range(stitches[0]):
 			for j in range(stitches[1]):
-				S+=self.CH[channel][128*i:128*(i+1),128*j:128*(j+1)]
+				S+=self.channels[channel][128*i:128*(i+1),128*j:128*(j+1)]
 		S[S==0]=1
-		for x in self.CH:
+		for x in self.channels:
 			F = np.zeros(size)
 			for i in range(stitches[0]):
 				for j in range(stitches[1]):
-					F[128*i:128*(i+1),128*j:128*(j+1)]=self.CH[x][128*i:128*(i+1),128*j:128*(j+1)]/S
+					F[128*i:128*(i+1),128*j:128*(j+1)]=self.channels[x][128*i:128*(i+1),128*j:128*(j+1)]/S
 			N.add(F,x)
 		return N
 		

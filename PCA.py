@@ -17,19 +17,19 @@ class PCA:
 		self.standX = None
 		
 	def scatter(self, **kargs):
-		pd.tools.plotting.scatter_matrix(self.data,diagonal="kde",**kargs);
+		pd.tools.plotting.scatter_matrix(self.data, diagonal="kde", **kargs);
 		plt.tight_layout();
 		
 	def corr(self):
-		corrmat=self.data.corr()
+		corrmat = self.data.corr()
 		return corrmat
 	
 	def corrShow(self):
 		import seaborn as sns
-		corrmat=self.corr()
+		corrmat = self.corr()
 		sns.heatmap(corrmat).xaxis.tick_top()
 	
-	def hinton(self,max_weight=None, ax=None):
+	def hinton(self, max_weight=None, ax=None):
 		"""Draw Hinton diagram for visualizing a weight matrix."""
 		matrix = self.corr()
 		ax = ax if ax is not None else plt.gca()
@@ -136,8 +136,8 @@ class ITA_PCA(PCA):
 		"""Init a PCA class from a collection"""
 		self.col = c
 		if channels is None:
-			channels=c.CH.keys()
-		mul = self.col.getMultiVariate(channels)
+			channels=c.channels.keys()
+		mul = self.col.get_multivariate(channels)
 		PCA.__init__(self, mul)
 	
 	def showPCA(self, num=None, ax=None):
@@ -146,16 +146,16 @@ class ITA_PCA(PCA):
 		
 	def getPCAcol(self, num=None):
 		if num is None:
-			num=self.data.shape[1]
+			num = self.data.shape[1]
 		assert num<=self.data.shape[1]
-		PCA_col = collection.collection(cls=self.col,name=self.col.name+"[PCA]")
+		PCA_col = collection.Collection(cls=self.col,name=self.col.name+"[PCA]")
 		for i in range(num):
-			PC=self.getPCA(i)
+			PC = self.getPCA(i)
 			PCA_col.add(PC,'PC{0}'.format(i+1))
 		return PCA_col
 			
 	def getPCA(self,id=0):
-		s=list(self.col.CH.values())[0].shape
+		s = list(self.col.channels.values())[0].shape
 		PC = self.pc(id).reshape(s)
 		return PC
 		
